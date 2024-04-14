@@ -39,6 +39,20 @@ var _ = Describe("Probability", func() {
 				intervals := probability.Discretize(vals, cfg)
 				Expect(intervalsHaveEqualSize(intervals)).To(BeTrue())
 			})
+
+			It("Returns nonoverlapping intervals in the correct order", func() {
+				intervals := probability.Discretize(vals, cfg)
+				for idx := 1; idx < len(intervals); idx++ {
+					Expect(intervals[idx].Lower).To(BeNumerically(">=", (intervals[idx-1].Lower + intervals[idx-1].Size)))
+				}
+			})
+
+			It("Returns intervals spanning the entire range of values", func() {
+				intervals := probability.Discretize(vals, cfg)
+				slices.Sort(vals)
+				Expect(intervals[0].Lower).To(Equal(vals[0]))
+				Expect(intervals[len(intervals)-1].Upper).To(Equal(vals[len(vals)-1]))
+			})
 		})
 
 		When("Only interval count is specified", func() {
@@ -153,6 +167,110 @@ var _ = Describe("Probability", func() {
 				It("Returns intervals of equal size", func() {
 					intervals := probability.Discretize(vals, cfg)
 					Expect(intervalsHaveEqualSize(intervals)).To(BeTrue())
+				})
+			})
+		})
+	})
+
+	Describe("Interval", func() {
+		var (
+			i                            *probability.Interval
+			l, u, s                      float64
+			includesLower, includesUpper bool
+		)
+
+		BeforeEach(func() {
+			l = 10.0
+			u = 0.0
+			s = 0.0
+			includesLower = false
+			includesUpper = false
+		})
+
+		JustBeforeEach(func() {
+			i = &probability.Interval{
+				Lower:         l,
+				Upper:         u,
+				Size:          s,
+				IncludesLower: includesLower,
+				IncludesUpper: includesUpper,
+			}
+		})
+
+		Describe("Contains", func() {
+			When("The interval has size specified (discretization using equal size)", func() {
+				BeforeEach(func() {
+					s = 5.0
+					includesLower = true
+				})
+
+				When("The val is contained within the interval", func() {
+					It("Returns true", func() {
+						Expect(i.Contains(i.Lower + (i.Size / 2.0))).To(BeTrue())
+					})
+				})
+
+				When("The val is not contained within the interval", func() {
+					It("Returns false", func() {
+						Expect(i.Contains(i.Lower + (i.Size * 2.0))).To(BeFalse())
+					})
+				})
+
+				When("The val equals the lower limit", func() {
+					It("Returns true", func() {
+						Expect(i.Contains(i.Lower)).To(BeTrue())
+					})
+				})
+
+				When("The val equals the upper limit (lower + size)", func() {
+					It("Returns false", func() {
+						Expect(i.Contains(i.Lower + i.Size)).To(BeFalse())
+					})
+
+					When("This is the last interval in the range", func() {
+						BeforeEach(func() {
+							includesUpper = true
+						})
+
+						It("Returns true", func() {
+							Expect(i.Contains(i.Lower + i.Size)).To(BeTrue())
+						})
+					})
+				})
+			})
+
+			When("The interval has upper specified (discretization using equal distribution)", func() {
+				BeforeEach(func() {
+					u = 20.0
+					includesUpper = true
+				})
+
+				JustBeforeEach(func() {
+					Expect(i.Size).To(Equal(0.0))
+				})
+
+				When("The val is contained within the interval", func() {
+					It("Returns true", func() {
+						Expect(i.Contains(i.Lower + ((i.Upper - i.Lower) / 2.0))).To(BeTrue())
+					})
+				})
+
+				When("The val is not contained within the interval", func() {
+					It("Returns false", func() {
+						Expect(i.Contains(i.Upper + i.Lower)).To(BeFalse())
+					})
+				})
+
+				When("The val equals the lower bound", func() {
+					It("Returns true", func() {
+						Expect(i.Contains(i.Lower)).To(BeTrue())
+					})
+				})
+
+				When("The Val equals the upper bound", func() {
+					It("Returns true", func() {
+						Expect(i.Contains(i.Upper)).To(BeTrue())
+					})
 				})
 			})
 		})

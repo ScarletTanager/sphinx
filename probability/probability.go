@@ -12,6 +12,33 @@ type Interval struct {
 	IncludesUpper bool
 }
 
+// Contains returns true of the specified value is contained by the interval,
+// false otherwise
+func (i *Interval) Contains(val float64) bool {
+	if i.Upper != 0.0 {
+		// Either equal distribution or the last interval from equal size
+		return val >= i.Lower && ((i.IncludesUpper && val <= i.Upper) || val < i.Upper)
+	}
+
+	// Interval was created using equal size
+	if i.Size != 0.0 {
+		if val >= i.Lower {
+			return val < (i.Lower+i.Size) || (val == (i.Lower+i.Size) && i.IncludesUpper)
+		}
+	}
+
+	// Either a screwed-up interval or the value is not contained
+	return false
+}
+
+type Intervals []Interval
+
+// IntervalForValue returns the index 0..(len(is) - 1) of the
+// Interval containing the passed value
+func (is Intervals) IntervalForValue(val float64) int {
+	return -1
+}
+
 // DiscretizationConfig controls the behavior of discretization of a continuous
 // range of values.  Intervals is the number of intervals, Method determines
 // how the range is subdivided, and IncludeUpperBound toggles whether each interval
@@ -59,10 +86,16 @@ func Discretize(vals []float64, cfg DiscretizationConfig) []Interval {
 	case IntervalEqualSize:
 		rangeSize := vals[len(vals)-1] - vals[0]
 		intervalSize := rangeSize / float64(intervalCount)
-		for i := 0; i < intervalCount; i++ {
-			lower := vals[0] + (intervalSize * float64(i))
+		intervals[0] = Interval{
+			Lower:         vals[0],
+			Size:          intervalSize,
+			IncludesLower: true,
+			IncludesUpper: false,
+		}
+
+		for i := 1; i < intervalCount; i++ {
 			intervals[i] = Interval{
-				Lower:         lower,
+				Lower:         intervals[i-1].Lower + intervalSize,
 				Size:          intervalSize,
 				IncludesLower: true,
 				IncludesUpper: false,
