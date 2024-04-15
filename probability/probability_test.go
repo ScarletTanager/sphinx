@@ -1,6 +1,7 @@
 package probability_test
 
 import (
+	"math"
 	"math/rand"
 	"slices"
 
@@ -313,6 +314,65 @@ var _ = Describe("Probability", func() {
 				It("Returns -1", func() {
 					Expect(intervals.IntervalForValue(3.0)).To(Equal(-1))
 				})
+			})
+		})
+	})
+
+	Describe("Probability Mass Functions", func() {
+		Describe("MassDiscrete", func() {
+			var (
+				values []int
+			)
+
+			BeforeEach(func() {
+				values = []int{3, 3, 1, 2, 3, 1, 1, 2, 3, 1}
+			})
+
+			It("Returns a correct pmf over the sample space", func() {
+				pmf := probability.MassDiscrete(values)
+
+				Expect(pmf(1)).To(Equal(0.4))
+				Expect(pmf(2)).To(Equal(0.2))
+				Expect(pmf(3)).To(Equal(0.4))
+
+				totalProbability := float64(0)
+				for _, v := range []int{1, 2, 3} {
+					totalProbability += pmf(v)
+				}
+
+				Expect(totalProbability).To(Equal(1.0))
+			})
+		})
+	})
+
+	Describe("Bayes", func() {
+		var (
+			probA, probB, probBgivenA float64
+		)
+
+		BeforeEach(func() {
+			// Values from McGrayne (2011) via Murphy (2012)
+			probA = 0.004
+			probBgivenA = 0.8
+			probB = (0.8 * 0.004) + (0.1 * 0.996)
+		})
+
+		When("The probabilities are all valid", func() {
+			It("Returns the probability of A given B", func() {
+				probAgivenB, _ := probability.Bayes(probA, probBgivenA, probB)
+				probAgivenB = math.Round(probAgivenB*1000.0) / 1000.0
+				Expect(probAgivenB).To(Equal(0.031))
+			})
+		})
+
+		When("One of the probabilities is invalid", func() {
+			BeforeEach(func() {
+				probA = 2.3
+			})
+
+			It("Returns an error", func() {
+				_, e := probability.Bayes(probA, probBgivenA, probB)
+				Expect(e).To(HaveOccurred())
 			})
 		})
 	})

@@ -1,6 +1,10 @@
 package probability
 
+// Code dealing with discretization of continuous variables
+
 import (
+	"errors"
+	"math"
 	"slices"
 )
 
@@ -134,4 +138,62 @@ func Discretize(vals []float64, cfg DiscretizationConfig) []Interval {
 	}
 
 	return intervals
+}
+
+// Probability Mass Functions
+
+type ProbabilityMassFunction func(int) float64
+
+// MassDiscrete returns a probability mass function (PMF) over the range of values
+// which can be assigned to a given random variable.  The variable has a discrete
+// range, and the values must represent the full sample space.
+func MassDiscrete(values []int) ProbabilityMassFunction {
+	count := float64(len(values))
+	if count == 0 {
+		return nil
+	}
+
+	valCounts := make(map[int]float64)
+	for _, val := range values {
+		valCounts[val] += 1.0
+	}
+
+	return func(x int) float64 {
+		return valCounts[x] / count
+	}
+}
+
+// MassGeometric returns a probability mass function (PMF) which computes the probability
+// that a given event will occur for the first time after (x-1) nonoccurrences - so the
+// event occurs on the xth opportunity.
+// p is the probabiliity of the event occurring, 1-p is its complement, and the full
+// function is given by (1-p)^(x-1) * p.
+// NEEDS TESTS
+func MassGeometric(p float64) (func(int) float64, error) {
+	if !probabilityIsValid(p) {
+		return nil, errors.New("probability must be from 0.0 to 1.0 inclusive")
+	}
+
+	return func(x int) float64 {
+		return math.Pow((1.0-p), float64(x)-1.0) * p
+	}, nil
+}
+
+func probabilityIsValid(p float64) bool {
+	if p >= 0.0 && p <= 1.0 {
+		return true
+	}
+
+	return false
+}
+
+// Bayes is a trivial implemention of Bayes' rule.  We assume probB is already the sum
+// of all the posteriors for B (its prior) for all possible values of A.
+// NEEDS TESTS
+func Bayes(probA, probBgivenA, probB float64) (float64, error) {
+	if !probabilityIsValid(probA) || !probabilityIsValid(probBgivenA) || !probabilityIsValid(probB) {
+		return 0.0, errors.New("all probabilities must be from 0.0 to 1.0 inclusive")
+	}
+
+	return (probA * probBgivenA) / probB, nil
 }
