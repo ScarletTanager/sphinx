@@ -36,6 +36,13 @@ type Intervals []Interval
 // IntervalForValue returns the index 0..(len(is) - 1) of the
 // Interval containing the passed value
 func (is Intervals) IntervalForValue(val float64) int {
+	for idx, interval := range is {
+		if interval.Contains(val) {
+			return idx
+		}
+	}
+
+	// I know, this isn't very idiomatic.  Should be an error, will fix later.
 	return -1
 }
 

@@ -91,6 +91,13 @@ var _ = Describe("Probability", func() {
 				}
 			})
 
+			It("Returns nonoverlapping intervals in the correct order", func() {
+				intervals := probability.Discretize(vals, cfg)
+				for idx := 1; idx < len(intervals); idx++ {
+					Expect(intervals[idx].Lower).To(BeNumerically(">", intervals[idx-1].Upper))
+				}
+			})
+
 			When("An interval count is specified", func() {
 				BeforeEach(func() {
 					cfg.Intervals = 5
@@ -271,6 +278,40 @@ var _ = Describe("Probability", func() {
 					It("Returns true", func() {
 						Expect(i.Contains(i.Upper)).To(BeTrue())
 					})
+				})
+			})
+		})
+	})
+
+	Describe("Intervals", func() {
+		var (
+			intervals probability.Intervals
+			vals      []float64
+			cfg       probability.DiscretizationConfig
+		)
+
+		BeforeEach(func() {
+			vals = []float64{
+				1.0, 2.0,
+			}
+
+			cfg = probability.DiscretizationConfig{}
+		})
+
+		JustBeforeEach(func() {
+			intervals = probability.Discretize(vals, cfg)
+		})
+
+		Describe("IntervalForValue", func() {
+			When("The value is contained by an interval", func() {
+				It("Returns the index of the correct interval", func() {
+					Expect(intervals.IntervalForValue(1.55)).To(Equal(5))
+				})
+			})
+
+			When("The value is not contained by any interval", func() {
+				It("Returns -1", func() {
+					Expect(intervals.IntervalForValue(3.0)).To(Equal(-1))
 				})
 			})
 		})
