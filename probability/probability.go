@@ -195,5 +195,9 @@ func Bayes(probA, probBgivenA, probB float64) (float64, error) {
 		return 0.0, errors.New("all probabilities must be from 0.0 to 1.0 inclusive")
 	}
 
+	if probB == 0.0 {
+		return 0.0, nil
+	}
+
 	return (probA * probBgivenA) / probB, nil
 }

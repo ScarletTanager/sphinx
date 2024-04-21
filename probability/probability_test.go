@@ -375,6 +375,18 @@ var _ = Describe("Probability", func() {
 				Expect(e).To(HaveOccurred())
 			})
 		})
+
+		When("The total probability of B is zero", func() {
+			BeforeEach(func() {
+				probB = 0.0
+			})
+
+			It("Returns zero", func() {
+				p, e := probability.Bayes(probA, probBgivenA, probB)
+				Expect(e).NotTo(HaveOccurred())
+				Expect(p).To(Equal(0.0))
+			})
+		})
 	})
 })
 
